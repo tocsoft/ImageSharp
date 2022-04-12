@@ -4,6 +4,7 @@
 using System.IO;
 using System.Threading;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
 
 namespace SixLabors.ImageSharp.Formats
 {
@@ -33,5 +34,13 @@ namespace SixLabors.ImageSharp.Formats
         /// <returns>The <see cref="Image"/>.</returns>
         // TODO: Document ImageFormatExceptions (https://github.com/SixLabors/ImageSharp/issues/1110)
         Image Decode(Configuration configuration, Stream stream, CancellationToken cancellationToken);
+    }
+
+    internal interface IResizableImageDecoder : IImageDecoder
+    {
+        public Image Experimental__DecodeInto(Configuration configuration, Stream stream, ResizeProcessor targetResizeOperation, CancellationToken cancellationToken);
+
+        public Image<TPixel> Experimental__DecodeInto<TPixel>(Configuration configuration, Stream stream, ResizeProcessor targetResizeOperation, CancellationToken cancellationToken)
+            where TPixel : unmanaged, IPixel<TPixel>;
     }
 }

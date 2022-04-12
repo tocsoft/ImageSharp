@@ -12,35 +12,30 @@ namespace SixLabors.ImageSharp.Processing.Processors.Transforms
         /// Initializes a new instance of the <see cref="ResizeProcessor"/> class.
         /// </summary>
         /// <param name="options">The resize options.</param>
-        /// <param name="sourceSize">The source image size.</param>
-        public ResizeProcessor(ResizeOptions options, Size sourceSize)
+        public ResizeProcessor(ResizeOptions options)
         {
             Guard.NotNull(options, nameof(options));
             Guard.NotNull(options.Sampler, nameof(options.Sampler));
             Guard.MustBeValueType(options.Sampler, nameof(options.Sampler));
 
-            (Size size, Rectangle rectangle) = ResizeHelper.CalculateTargetLocationAndBounds(sourceSize, options);
-
             this.Options = options;
-            this.DestinationWidth = size.Width;
-            this.DestinationHeight = size.Height;
-            this.DestinationRectangle = rectangle;
+            this.DestinationSize = options.Size;
         }
 
         /// <summary>
         /// Gets the destination width.
         /// </summary>
-        public int DestinationWidth { get; }
+        public int DestinationWidth => this.DestinationSize.Width;
 
         /// <summary>
         /// Gets the destination height.
         /// </summary>
-        public int DestinationHeight { get; }
+        public int DestinationHeight => this.DestinationSize.Height;
 
         /// <summary>
-        /// Gets the resize rectangle.
+        /// Gets the destination size.
         /// </summary>
-        public Rectangle DestinationRectangle { get; }
+        public Size DestinationSize { get; }
 
         /// <summary>
         /// Gets the resize options.

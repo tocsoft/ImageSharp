@@ -8,6 +8,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.Metadata;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace SixLabors.ImageSharp
 {
@@ -123,6 +124,10 @@ namespace SixLabors.ImageSharp
         /// </returns>
         private static (Image<TPixel> Image, IImageFormat Format) Decode<TPixel>(Stream stream, Configuration config, CancellationToken cancellationToken = default)
             where TPixel : unmanaged, IPixel<TPixel>
+            => Decode<TPixel>(stream, config, null, cancellationToken);
+
+        private static (Image<TPixel> Image, IImageFormat Format) Decode<TPixel>(Stream stream, Configuration config, Action<IImageProcessingContext> operation, CancellationToken cancellationToken = default)
+            where TPixel : unmanaged, IPixel<TPixel>
         {
             IImageDecoder decoder = DiscoverDecoder(stream, config, out IImageFormat format);
             if (decoder is null)
@@ -130,11 +135,34 @@ namespace SixLabors.ImageSharp
                 return (null, null);
             }
 
-            Image<TPixel> img = decoder.Decode<TPixel>(config, stream, cancellationToken);
+            Image<TPixel> img = null;
+            if (operation != null && decoder is IResizableImageDecoder resizeDecoder)
+            {
+                if (ResizeInterceptingImageProcessingContext.TryIntercept(config, operation, out var context))
+                {
+                    operation = context.BuildDelegate();
+
+                    // find the resize operation from the context and pass it into the decoder
+                    if (context.ResizeProcessor != null)
+                    {
+                        img = resizeDecoder.Experimental__DecodeInto<TPixel>(config, stream, context.ResizeProcessor, cancellationToken);
+                    }
+                }
+            }
+
+            img ??= decoder.Decode<TPixel>(config, stream, cancellationToken);
+            if (operation != null)
+            {
+                img.Mutate(operation);
+            }
+
             return (img, format);
         }
 
         private static (Image Image, IImageFormat Format) Decode(Stream stream, Configuration config, CancellationToken cancellationToken = default)
+            => Decode(stream, config, null, cancellationToken);
+
+        private static (Image Image, IImageFormat Format) Decode(Stream stream, Configuration config, Action<IImageProcessingContext> operation, CancellationToken cancellationToken = default)
         {
             IImageDecoder decoder = DiscoverDecoder(stream, config, out IImageFormat format);
             if (decoder is null)
@@ -142,8 +170,32 @@ namespace SixLabors.ImageSharp
                 return (null, null);
             }
 
-            Image img = decoder.Decode(config, stream, cancellationToken);
-            return (img, format);
+            if (operation != null && decoder is IResizableImageDecoder resizeDecoder)
+            {
+                if (ResizeInterceptingImageProcessingContext.TryIntercept(config, operation, out var context))
+                {
+                    // find the resize operation from the context and pass it into the decoder
+                    if (context.ResizeProcessor == null)
+                    {
+                        operation = context.BuildDelegate();
+                    }
+                    else
+                    {
+                        Image resizedImg = resizeDecoder.Experimental__DecodeInto(config, stream, context.ResizeProcessor, cancellationToken);
+                        resizedImg.Mutate(context.BuildDelegate());
+                        return (resizedImg, format);
+                    }
+                }
+
+                Image img = decoder.Decode(config, stream, cancellationToken);
+                img.Mutate(operation);
+                return (img, format);
+            }
+            else
+            {
+                Image img = decoder.Decode(config, stream, cancellationToken);
+                return (img, format);
+            }
         }
 
         /// <summary>

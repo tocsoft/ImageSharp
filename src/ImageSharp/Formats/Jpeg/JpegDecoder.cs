@@ -7,13 +7,15 @@ using SixLabors.ImageSharp.IO;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
 
 namespace SixLabors.ImageSharp.Formats.Jpeg
 {
     /// <summary>
     /// Image decoder for generating an image out of a jpg stream.
     /// </summary>
-    public sealed class JpegDecoder : IImageDecoder, IJpegDecoderOptions, IImageInfoDetector
+    public sealed class JpegDecoder : IImageDecoder, IJpegDecoderOptions, IImageInfoDetector, IResizableImageDecoder
     {
         /// <inheritdoc/>
         public bool IgnoreMetadata { get; set; }
@@ -40,8 +42,8 @@ namespace SixLabors.ImageSharp.Formats.Jpeg
         /// <param name="targetSize">Placeholder4</param>
         /// <param name="cancellationToken">Placeholder5</param>
         /// <returns>Placeholder6</returns>
-        public Image Experimental__DecodeInto(Configuration configuration, Stream stream, Size targetSize, CancellationToken cancellationToken)
-            => this.Experimental__DecodeInto<Rgb24>(configuration, stream, targetSize, cancellationToken);
+        public Image Experimental__DecodeInto(Configuration configuration, Stream stream, ResizeProcessor targetResizeOperation, CancellationToken cancellationToken)
+            => this.Experimental__DecodeInto<Rgb24>(configuration, stream, targetResizeOperation, cancellationToken);
 
         /// <summary>
         /// Placeholder summary.
@@ -52,7 +54,7 @@ namespace SixLabors.ImageSharp.Formats.Jpeg
         /// <param name="targetSize">Placeholder4</param>
         /// <param name="cancellationToken">Placeholder5</param>
         /// <returns>Placeholder6</returns>
-        public Image<TPixel> Experimental__DecodeInto<TPixel>(Configuration configuration, Stream stream, Size targetSize, CancellationToken cancellationToken)
+        public Image<TPixel> Experimental__DecodeInto<TPixel>(Configuration configuration, Stream stream, ResizeProcessor targetResizeOperation, CancellationToken cancellationToken)
             where TPixel : unmanaged, IPixel<TPixel>
         {
             Guard.NotNull(stream, nameof(stream));
@@ -62,10 +64,13 @@ namespace SixLabors.ImageSharp.Formats.Jpeg
             using var bufferedReadStream = new BufferedReadStream(configuration, stream);
             try
             {
-                Image<TPixel> img = decoder.Experimental__DecodeInto<TPixel>(bufferedReadStream, targetSize, cancellationToken);
-                if (img.Size() != targetSize)
+                Image<TPixel> img = decoder.Experimental__DecodeInto<TPixel>(bufferedReadStream, targetResizeOperation.DestinationSize, cancellationToken);
+                if (img.Size() != targetResizeOperation.DestinationSize)
                 {
-                    img.Mutate(ctx => ctx.Resize(targetSize, KnownResamplers.Box, compand: false));
+                    using (IImageProcessor<TPixel> specificProcessor = ((IImageProcessor)targetResizeOperation).CreatePixelSpecificProcessor(configuration, img, img.Bounds()))
+                    {
+                        specificProcessor.Execute();
+                    }
                 }
 
                 return img;

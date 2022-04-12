@@ -9,6 +9,7 @@ using System.Threading;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
 using SixLabors.ImageSharp.Tests.PixelFormats.PixelOperations;
 using SixLabors.ImageSharp.Tests.ProfilingBenchmarks;
 using Xunit.Abstractions;
@@ -49,7 +50,7 @@ namespace SixLabors.ImageSharp.Tests.ProfilingSandbox
             Console.WriteLine("Done.");
         }
 
-        const string pathTemplate = "C:\\Users\\pl4nu\\Downloads\\{0}.jpg";
+        const string pathTemplate = "C:\\Source\\SixLabors\\ImageSharp.Drawing\\tests\\Images\\Input\\Jpg\\baseline\\{0}.jpg";
 
         private static void BenchmarkEncoder(string fileName, int iterations, int quality, JpegColorType color)
         {
@@ -122,7 +123,7 @@ namespace SixLabors.ImageSharp.Tests.ProfilingSandbox
             for (int i = 0; i < iterations; i++)
             {
                 inputStream.Position = 0;
-                using Image img = decoder.Experimental__DecodeInto<Rgb24>(Configuration.Default, inputStream, targetSize, CancellationToken.None);
+                using Image img = decoder.Experimental__DecodeInto<Rgb24>(Configuration.Default, inputStream, new ResizeProcessor(new ResizeOptions { Size = targetSize }), CancellationToken.None);
                 img.SaveAsJpeg(saveStream, encoder);
             }
             sw.Stop();
@@ -185,9 +186,9 @@ namespace SixLabors.ImageSharp.Tests.ProfilingSandbox
                 Quality = quality,
                 ColorType = JpegColorType.YCbCrRatio444
             };
-
+            var operation = new ResizeProcessor(new ResizeOptions { Size = targetSize });
             using Image img = decoder.Decode<Rgb24>(Configuration.Default, File.OpenRead(loadPath), CancellationToken.None);
-            img.Mutate(ctx => ctx.Resize(targetSize, KnownResamplers.Box, false));
+            img.Mutate(ctx => ctx.ApplyProcessor(operation));
             img.SaveAsJpeg(savePath, encoder);
 
         }
@@ -197,7 +198,7 @@ namespace SixLabors.ImageSharp.Tests.ProfilingSandbox
             string loadPath = String.Format(pathTemplate, fileName);
 
             var decoder = new JpegDecoder();
-            using Image img = decoder.Experimental__DecodeInto<Rgb24>(Configuration.Default, File.OpenRead(loadPath), targetSize, CancellationToken.None);
+            using Image img = decoder.Experimental__DecodeInto<Rgb24>(Configuration.Default, File.OpenRead(loadPath), new ResizeProcessor(new ResizeOptions { Size = targetSize }), CancellationToken.None);
 
             string savePath = String.Format(pathTemplate, $"q{quality}_test_{fileName}");
             var encoder = new JpegEncoder()

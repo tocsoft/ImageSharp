@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.IO;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace SixLabors.ImageSharp
 {
@@ -545,8 +546,12 @@ namespace SixLabors.ImageSharp
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public static Image<TPixel> Load<TPixel>(Configuration configuration, Stream stream, out IImageFormat format)
             where TPixel : unmanaged, IPixel<TPixel>
+            => Load<TPixel>(configuration, stream, null, out format);
+
+        public static Image<TPixel> Load<TPixel>(Configuration configuration, Stream stream, Action<IImageProcessingContext> operation, out IImageFormat format)
+            where TPixel : unmanaged, IPixel<TPixel>
         {
-            (Image<TPixel> Image, IImageFormat Format) data = WithSeekableStream(configuration, stream, s => Decode<TPixel>(s, configuration));
+            (Image<TPixel> Image, IImageFormat Format) data = WithSeekableStream(configuration, stream, s => Decode<TPixel>(s, configuration, operation));
 
             format = data.Format;
 
@@ -687,6 +692,9 @@ namespace SixLabors.ImageSharp
         /// <exception cref="InvalidImageContentException">Image contains invalid content.</exception>
         /// <returns>A new <see cref="Image{TPixel}"/>.</returns>
         public static Image Load(Configuration configuration, Stream stream, out IImageFormat format)
+            => Load(configuration, stream, null, out format);
+
+        public static Image Load(Configuration configuration, Stream stream, Action<IImageProcessingContext> operation, out IImageFormat format)
         {
             (Image Img, IImageFormat Format) data = WithSeekableStream(configuration, stream, s => Decode(s, configuration));
 

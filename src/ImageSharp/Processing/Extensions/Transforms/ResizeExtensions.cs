@@ -127,7 +127,7 @@ namespace SixLabors.ImageSharp.Processing
                 Compand = compand
             };
 
-            return source.ApplyProcessor(new ResizeProcessor(options, source.GetCurrentSize()), sourceRectangle);
+            return source.ApplyProcessor(new ResizeProcessor(options), sourceRectangle);
         }
 
         /// <summary>
@@ -171,6 +171,6 @@ namespace SixLabors.ImageSharp.Processing
         /// <returns>The <see cref="IImageProcessingContext"/> to allow chaining of operations.</returns>
         /// <remarks>Passing zero for one of height or width within the resize options will automatically preserve the aspect ratio of the original image or the nearest possible ratio.</remarks>
         public static IImageProcessingContext Resize(this IImageProcessingContext source, ResizeOptions options)
-            => source.ApplyProcessor(new ResizeProcessor(options, source.GetCurrentSize()));
+            => source.ApplyProcessor(new ResizeProcessor(options));
     }
 }

@@ -26,9 +26,10 @@ namespace SixLabors.ImageSharp.Processing.Processors.Transforms
         public ResizeProcessor(Configuration configuration, ResizeProcessor definition, Image<TPixel> source, Rectangle sourceRectangle)
             : base(configuration, source, sourceRectangle)
         {
-            this.destinationWidth = definition.DestinationWidth;
-            this.destinationHeight = definition.DestinationHeight;
-            this.destinationRectangle = definition.DestinationRectangle;
+            (Size size, Rectangle rectangle) = ResizeHelper.CalculateTargetLocationAndBounds(source.Size(), definition.Options);
+            this.destinationWidth = size.Width;
+            this.destinationHeight = size.Height;
+            this.destinationRectangle = rectangle;
             this.options = definition.Options;
             this.resampler = definition.Options.Sampler;
         }
