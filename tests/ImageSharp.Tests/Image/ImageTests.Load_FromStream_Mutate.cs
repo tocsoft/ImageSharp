@@ -29,12 +29,6 @@ namespace SixLabors.ImageSharp.Tests
                     p.Resize(150, 150);
                 };
 
-                ImagePipeline
-                    .Open(file.Bytes)
-                    .WithConfig()
-
-                    .ExecuteAsync();
-
                 using var imgSrc = Image.Load<Rgba32>(Configuration.Default, new MemoryStream(file.Bytes), pipeline, out _);
                 using var imgExpected = Image.Load<Rgba32>(Configuration.Default, new MemoryStream(file.Bytes), out _);
                 imgExpected.Mutate(pipeline);
