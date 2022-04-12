@@ -117,13 +117,18 @@ namespace SixLabors.ImageSharp.Tests.ProfilingSandbox
 
             var decoder = new JpegDecoder { IgnoreMetadata = true };
             var encoder = new JpegEncoder { ColorType = JpegColorType.YCbCrRatio444 };
-
+            var format = Configuration.Default.ImageFormatsManager.FindFormatByFileExtension(".jpg");
+            Configuration.Default.ImageFormatsManager.SetDecoder(format, decoder);
             var sw = new Stopwatch();
             sw.Start();
             for (int i = 0; i < iterations; i++)
             {
                 inputStream.Position = 0;
-                using Image img = decoder.Experimental__DecodeInto<Rgb24>(Configuration.Default, inputStream, new ResizeProcessor(new ResizeOptions { Size = targetSize }), CancellationToken.None);
+                using Image img = Image.Load<Rgb24>(Configuration.Default, inputStream, ctx =>
+                {
+                    ctx.Resize(targetSize, KnownResamplers.Box, false);
+                }, out _);
+
                 img.SaveAsJpeg(saveStream, encoder);
             }
             sw.Stop();
@@ -144,14 +149,18 @@ namespace SixLabors.ImageSharp.Tests.ProfilingSandbox
 
             var decoder = new JpegDecoder { IgnoreMetadata = true };
             var encoder = new JpegEncoder { ColorType = JpegColorType.YCbCrRatio444 };
-
+            var format = Configuration.Default.ImageFormatsManager.FindFormatByFileExtension(".jpg");
+            Configuration.Default.ImageFormatsManager.SetDecoder(format, decoder);
             var sw = new Stopwatch();
             sw.Start();
             for (int i = 0; i < iterations; i++)
             {
                 inputStream.Position = 0;
-                using Image img = decoder.Decode<Rgb24>(Configuration.Default, inputStream, CancellationToken.None);
-                img.Mutate(ctx => ctx.Resize(targetSize, KnownResamplers.Box, false));
+                using Image img = Image.Load<Rgb24>(Configuration.Default, inputStream, null, out _);
+                img.Mutate(ctx =>
+                {
+                    ctx.Resize(targetSize, KnownResamplers.Box, false);
+                });
                 img.SaveAsJpeg(saveStream, encoder);
             }
             sw.Stop();
